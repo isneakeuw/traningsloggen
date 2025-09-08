@@ -1,500 +1,896 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Min Träningslogg - Interaktiv Sida</title>
+    <title>Träningslogg</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chosen Palette: Warm Neutral Harmony -->
-    <!-- Application Structure Plan: A dashboard-centric design was chosen over a simple table replication to enhance user engagement and clarity. The core user task is to check progress and log new data for a specific exercise. The primary view focuses on a single exercise at a time, featuring a large progress chart, key performance indicators (KPIs), and a dedicated data entry form. A full, editable data table is included below for a complete overview. The AI-driven coach has been removed as per user request. This structure prioritizes visualization, interaction, and data management. -->
-    <!-- Visualization & Content Choices: 
-        1. Report Info: Weekly weight progression for a single exercise. Goal: Show change over time. Viz: Line Chart. Interaction: The chart dynamically updates based on the selected exercise from a dropdown, with tooltips showing specific data points on hover. Justification: A line chart is the most effective and motivating way to visualize trends and progress, superior to a simple row of numbers. Library: Chart.js (Canvas).
-        2. Report Info: All exercise data (weight, sets, reps per week). Goal: Organize and provide a comprehensive overview. Viz: Interactive HTML Table. Interaction: Users can click directly on cells to edit values, which instantly updates the application's state and any related visualizations. Justification: This provides a familiar, spreadsheet-like power-user feature for quick editing and a holistic view of all logged data. Method: HTML/JS.
-        3. Report Info: Adding/changing exercises. Goal: Allow customization and data management. Viz: Simple Form Inputs and Buttons. Interaction: A dedicated form for adding new exercises and delete buttons next to each exercise in the main table. Justification: Provides a clear, intuitive, and non-destructive way for the user to manage their exercise list, fulfilling a key requirement. Method: HTML/JS.
-        All interactions are designed to provide immediate visual feedback, reinforcing the user's actions and making the application feel responsive and alive. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #F5F5F4; /* stone-100 */
-            color: #292524; /* stone-800 */
             font-family: 'Inter', sans-serif;
+            background-color: #212121;
+            color: #e0e0e0;
+            background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23333333' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zm1 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
         }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        .chart-container {
-            position: relative;
+        details > summary {
+            list-style: none;
+            cursor: pointer;
+        }
+        details > summary::marker,
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details > summary:before {
+            content: "►";
+            float: left;
+            margin-right: 0.5em;
+            transition: transform 0.2s ease;
+        }
+        details[open] > summary:before {
+            transform: rotate(90deg);
+        }
+        .styled-table {
+            border-collapse: collapse;
             width: 100%;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 40vh;
-            max-height: 400px;
         }
-        .table-cell {
-            padding: 0.75rem;
-            border: 1px solid #E7E5E4; /* stone-200 */
+        .styled-table th, .styled-table td {
+            padding: 8px 10px;
+            border: 1px solid #333;
             text-align: center;
-            min-width: 80px;
         }
-        input[type="number"] {
-            -moz-appearance: textfield;
-            width: 100%;
+        .styled-table th:first-child, .styled-table td:first-child {
+            text-align: left;
+        }
+        .styled-table thead th {
+            background-color: #333;
+            color: #d1e2f8;
+            font-weight: bold;
+        }
+        .styled-table tbody tr:hover {
+            background-color: #333;
+        }
+        .styled-table .delete-button-cell {
+            text-align: center;
+        }
+        
+        /* Styles to fix layout shift on edit */
+        .editable-cell input[type="number"] {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
             background-color: transparent;
+            color: inherit;
+            border: none;
+            outline: none;
             text-align: center;
+            padding: 0;
+            width: 100%;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
         }
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
+
+        /* Hide the spin buttons for all number input fields */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        .btn-primary {
-            background-color: #57534E; /* stone-600 */
-            color: #FFFFFF;
-            transition: background-color 0.3s;
+        input[type="number"] {
+            -moz-appearance: textfield;
         }
-        .btn-primary:hover {
-            background-color: #44403C; /* stone-700 */
-        }
-        .btn-danger {
-            background-color: #DC2626; /* red-600 */
-            color: #FFFFFF;
-            transition: background-color 0.3s;
-        }
-        .btn-danger:hover {
-            background-color: #B91C1C; /* red-700 */
-        }
-        .btn-secondary {
-            background-color: #78716C; /* stone-500 */
-            color: #FFFFFF;
-            transition: background-color 0.3s;
-        }
-        .btn-secondary:hover {
-            background-color: #57534E; /* stone-600 */
-        }
-        .modal-overlay {
+
+        /* Custom Modal Styles */
+        .modal {
+            display: none;
             position: fixed;
-            top: 0;
+            z-index: 1000;
             left: 0;
+            top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            padding-top: 150px;
         }
+
         .modal-content {
-            background-color: #ffffff;
-            padding: 2rem;
-            border-radius: 0.5rem;
+            background-color: #2e2e2e;
+            margin: auto;
+            padding: 24px;
+            border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             max-width: 400px;
-            width: 90%;
             text-align: center;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .modal-buttons .confirm {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .modal-buttons .cancel {
+            background-color: #4b5563;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
     </style>
 </head>
-<body class="antialiased">
-
-    <div id="app" class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-stone-700">Min Träningslogg</h1>
-            <p class="text-lg text-stone-500 mt-2">Visualisera dina framsteg och nå dina mål.</p>
+<body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
+    <div id="app-container" class="w-full max-w-lg bg-[#2e2e2e] rounded-2xl shadow-2xl p-6 sm:p-8">
+        <!-- Title and User ID Section -->
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold mb-1 text-[#d1e2f8]">Träningslogg</h1>
+            <p id="user-id-display" class="text-xs text-gray-400 font-mono"></p>
         </header>
 
-        <main>
-            <section id="dashboard" class="bg-white p-6 rounded-lg shadow-md mb-8">
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold text-stone-700 mb-4 sm:mb-0">Översikt</h2>
-                    <div class="w-full sm:w-auto">
-                        <label for="exercise-select" class="sr-only">Välj övning</label>
-                        <select id="exercise-select" class="w-full sm:w-64 p-2 border border-stone-300 rounded-md shadow-sm focus:ring-stone-500 focus:border-stone-500">
-                        </select>
-                    </div>
-                </div>
+        <!-- Loading Indicator -->
+        <div id="loading" class="flex justify-center items-center h-20 transition-all duration-500 ease-in-out">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d1e2f8]"></div>
+        </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-stone-50 p-4 rounded-lg">
-                        <h3 id="chart-title" class="text-xl font-semibold text-center mb-4 text-stone-600"></h3>
-                        <div class="chart-container">
-                            <canvas id="progressChart"></canvas>
+        <!-- Main Content (hidden until loaded) -->
+        <div id="main-content" class="hidden transition-opacity duration-500 ease-in-out">
+            <!-- Data Input Section -->
+            <div class="bg-[#333] p-5 rounded-xl mb-6 shadow-xl">
+                <h3 class="text-lg font-semibold mb-4 text-[#d1e2f8]">Ny inmatning</h3>
+                <div class="flex flex-col space-y-4">
+                    <select id="exercise-select" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner">
+                        <!-- Options will be dynamically added here -->
+                    </select>
+                    <!-- Inputs using a grid for better control -->
+                    <div class="grid grid-cols-[0.8fr_1fr_1fr_1.5fr] gap-4">
+                        <div class="flex flex-col items-start space-y-2">
+                            <label for="week-input" class="text-gray-400 text-sm font-semibold">Vecka</label>
+                            <input type="number" id="week-input" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner" min="1">
+                        </div>
+                        <div class="flex flex-col items-start space-y-2">
+                            <label for="sets-input" class="text-gray-400 text-sm font-semibold">Sets</label>
+                            <input type="number" id="sets-input" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner" min="1">
+                        </div>
+                        <div class="flex flex-col items-start space-y-2">
+                            <label for="reps-input" class="text-gray-400 text-sm font-semibold">Reps</label>
+                            <input type="number" id="reps-input" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner" min="1">
+                        </div>
+                        <div class="flex flex-col items-start space-y-2">
+                            <label for="weight-input" class="text-gray-400 text-sm font-semibold">Vikt (kg)</label>
+                            <input type="number" id="weight-input" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner" min="0.1" step="0.1">
                         </div>
                     </div>
-
-                    <div class="flex flex-col justify-between space-y-4">
-                        <div id="kpi-container" class="bg-stone-50 p-4 rounded-lg flex-grow flex flex-col justify-center text-center">
-                            <h3 class="text-lg font-semibold text-stone-600 mb-2">Statistik</h3>
-                            <div class="space-y-2">
-                                <p class="text-md text-stone-500">Senaste vikt: <span id="latest-weight" class="font-bold text-stone-700 text-xl"></span></p>
-                                <p class="text-md text-stone-500">Personbästa: <span id="personal-best" class="font-bold text-stone-700 text-xl"></span></p>
-                            </div>
-                        </div>
-
-                        <form id="data-entry-form" class="bg-stone-50 p-4 rounded-lg">
-                            <h3 class="text-lg font-semibold text-stone-600 mb-3 text-center">Logga Dagens Pass</h3>
-                            <div class="space-y-3">
-                                <div>
-                                    <label for="current-week-input" class="block text-sm font-medium text-stone-700">Vecka</label>
-                                    <input type="number" id="current-week-input" min="1" class="mt-1 block w-full p-2 border border-stone-300 rounded-md shadow-sm" placeholder="Ange vecka">
-                                </div>
-                                <div>
-                                    <label for="weight-input" class="block text-sm font-medium text-stone-700">Vikt (kg)</label>
-                                    <input type="number" step="0.25" id="weight-input" class="mt-1 block w-full p-2 border border-stone-300 rounded-md shadow-sm" placeholder="e.g., 82.5">
-                                </div>
-                                <button type="submit" class="w-full py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-primary">Spara pass</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
-            </section>
-            
-            <section id="full-data" class="bg-white p-6 rounded-lg shadow-md mb-8">
-                 <h2 class="text-2xl font-semibold text-stone-700 mb-4">Fullständig Datatabell</h2>
-                 <p class="text-stone-500 mb-4">Här kan du se och redigera all din data direkt i tabellen. Klicka på en cell för att ändra dess värde.</p>
-                 <div class="overflow-x-auto">
-                    <table id="progress-table" class="w-full border-collapse">
-                        <thead>
-                            <tr id="table-header-row" class="bg-stone-50"></tr>
+                <button id="save-button" class="mt-4 w-full bg-[#5cb85c] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#4a904a] hover:scale-[1.02] transition-all duration-300 shadow-lg">
+                    Spara
+                </button>
+                 <div id="status-message" class="text-center text-red-400 mt-4 h-6"></div>
+            </div>
+
+            <!-- Manage Exercises Section (now a collapsible list) -->
+            <details id="manage-exercises-details" class="bg-[#333] p-5 rounded-xl mb-6 shadow-xl">
+                <summary class="text-lg font-semibold text-[#d1e2f8] cursor-pointer transition-all duration-300">Hantera Övningar</summary>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 mt-4">
+                    <input type="text" id="new-exercise-input" placeholder="Lägg till ny övning" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner">
+                    <button id="add-exercise-button" class="bg-[#5cb85c] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#4a904a] hover:scale-[1.02] transition-all duration-300 shadow-lg sm:w-auto">
+                        Lägg till
+                    </button>
+                </div>
+                <div id="exercise-list" class="space-y-2">
+                    <!-- Exercise list will be dynamically added here -->
+                </div>
+            </details>
+
+            <!-- Data Table Section -->
+            <div class="bg-[#333] p-5 rounded-xl shadow-xl">
+                <h3 class="text-lg font-semibold mb-4 text-[#d1e2f8]" id="table-title">Vecka </h3>
+                <div class="mb-4">
+                    <label for="past-weeks-select" class="text-gray-400 text-sm font-semibold">Välj vecka att visa:</label>
+                    <select id="past-weeks-select" class="bg-[#212121] text-white p-2 rounded-lg w-full mt-2 focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner">
+                        <!-- Options will be dynamically added here -->
+                    </select>
+                </div>
+                <p id="table-instruction" class="text-sm text-gray-400 mb-4">Klicka på en cell för att redigera dess värde. Ändringen sparas automatiskt när du klickar utanför fältet.</p>
+                <div id="table-container" class="overflow-x-auto">
+                    <table class="styled-table w-full text-sm rounded-lg">
+                        <thead id="table-head">
+                            <!-- Table headers will be dynamically added here -->
                         </thead>
                         <tbody id="table-body">
+                            <!-- Table rows will be dynamically added here -->
                         </tbody>
                     </table>
                 </div>
-            </section>
-
-            <section id="manage-exercises" class="bg-white p-6 rounded-lg shadow-md mb-8">
-                <h2 class="text-2xl font-semibold text-stone-700 mb-4">Hantera Övningar</h2>
-                <form id="add-exercise-form" class="flex flex-col sm:flex-row items-center gap-4">
-                    <div class="w-full sm:flex-grow">
-                        <label for="new-exercise-name" class="sr-only">Nytt övningsnamn</label>
-                        <input type="text" id="new-exercise-name" placeholder="Lägg till ny övning, t.ex. 'Chins'" class="w-full p-2 border border-stone-300 rounded-md shadow-sm">
-                    </div>
-                    <button type="submit" class="w-full sm:w-auto py-2 px-6 rounded-md shadow-sm text-sm font-medium btn-primary">Lägg till</button>
-                </form>
-            </section>
-
-        </main>
-
-        <!-- Confirmation Modal -->
-        <div id="confirmation-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h3 class="text-xl font-semibold text-stone-700 mb-4">Bekräfta</h3>
-                <p id="modal-text" class="text-stone-600 mb-6"></p>
-                <div class="flex justify-center space-x-4">
-                    <button id="confirm-btn" class="py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-danger">Bekräfta</button>
-                    <button id="cancel-btn" class="py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-primary">Avbryt</button>
+                <div id="chart-container" class="hidden h-80">
+                    <canvas id="weightChart"></canvas>
                 </div>
+                <div id="data-list-empty-message" class="text-center text-gray-400 mt-4 hidden">Ingen data sparad ännu.</div>
+            </div>
+        </div>
+    
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h4 class="text-xl font-bold mb-4" id="modal-title">Bekräfta borttagning</h4>
+            <p id="modal-message">Är du säker på att du vill ta bort denna inmatning?</p>
+            <div class="modal-buttons">
+                <button class="confirm hover:scale-105 transition-all duration-300" id="confirm-delete">Ta bort</button>
+                <button class="cancel hover:scale-105 transition-all duration-300" id="cancel-delete">Avbryt</button>
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const initialData = [
-                { name: 'Knäböj', sets: 5, reps: 5, weeklyData: [80, 82.5, 85, 87.5, 90, 92.5, 95, 97.5] },
-                { name: 'Bänkpress', sets: 5, reps: 5, weeklyData: [60, 62.5, 65, 65, 67.5, 70, 70, 72.5] },
-                { name: 'Marklyft', sets: 1, reps: 5, weeklyData: [100, 105, 110, 115, 120, 122.5, 125, 127.5] },
-                { name: 'Militärpress', sets: 3, reps: 8, weeklyData: [40, 40, 42.5, 42.5, 45, 45, 47.5, 47.5] },
-                { name: 'Skivstångsrodd', sets: 3, reps: 8, weeklyData: [50, 52.5, 55, 55, 57.5, 60, 60, 62.5] },
-            ];
+    <!-- Firebase and Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, serverTimestamp, getDocs, deleteDoc, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        setLogLevel('debug');
 
-            const WEEKS = 8;
-            let appState = {
-                exercises: initialData,
-                selectedExerciseIndex: 0,
-            };
+        // Global variables for Firebase
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-            const exerciseSelect = document.getElementById('exercise-select');
-            const chartTitle = document.getElementById('chart-title');
-            const latestWeightEl = document.getElementById('latest-weight');
-            const personalBestEl = document.getElementById('personal-best');
-            const dataEntryForm = document.getElementById('data-entry-form');
-            const currentWeekInput = document.getElementById('current-week-input');
-            const weightInput = document.getElementById('weight-input');
-            const tableHeaderRow = document.getElementById('table-header-row');
-            const tableBody = document.getElementById('table-body');
-            const addExerciseForm = document.getElementById('add-exercise-form');
-            const newExerciseNameInput = document.getElementById('new-exercise-name');
-            const chartCanvas = document.getElementById('progressChart');
-            let progressChart;
-            const confirmationModal = document.getElementById('confirmation-modal');
-            const modalText = document.getElementById('modal-text');
-            const confirmBtn = document.getElementById('confirm-btn');
-            const cancelBtn = document.getElementById('cancel-btn');
+        // HTML Elements
+        const loadingDiv = document.getElementById('loading');
+        const mainContentDiv = document.getElementById('main-content');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const exerciseSelect = document.getElementById('exercise-select');
+        const weekInput = document.getElementById('week-input');
+        const pastWeeksSelect = document.getElementById('past-weeks-select');
+        const setsInput = document.getElementById('sets-input');
+        const repsInput = document.getElementById('reps-input');
+        const weightInput = document.getElementById('weight-input');
+        const saveButton = document.getElementById('save-button');
+        const dataListEmptyMessage = document.getElementById('data-list-empty-message');
+        const newExerciseInput = document.getElementById('new-exercise-input');
+        const addExerciseButton = document.getElementById('add-exercise-button');
+        const exerciseListDiv = document.getElementById('exercise-list');
+        const tableBody = document.getElementById('table-body');
+        const tableHead = document.getElementById('table-head');
+        const modal = document.getElementById('confirmationModal');
+        const confirmDeleteButton = document.getElementById('confirm-delete');
+        const cancelDeleteButton = document.getElementById('cancel-delete');
+        const tableTitle = document.getElementById('table-title');
+        const statusMessageDiv = document.getElementById('status-message');
+        const tableContainer = document.getElementById('table-container');
+        const chartContainer = document.getElementById('chart-container');
+        const tableInstruction = document.getElementById('table-instruction');
+        const weightChart = document.getElementById('weightChart');
+        const manageExercisesDetails = document.getElementById('manage-exercises-details');
+        
+        let db;
+        let auth;
+        let user;
+        let entryToDelete = null;
+        let myChart = null;
+        let hasTyped = false;
 
-            let deferredAction = null;
+        const defaultExercises = [
+            "Knäböj",
+            "Bänkpress",
+            "Marklyft",
+            "Militärpress",
+            "Skivstångsrodd",
+            "Chins"
+        ];
+        
+        // Function to ensure only digits 0-9 can be entered
+        const sanitizeIntegerInput = (event) => {
+            event.target.value = event.target.value.replace(/[^0-9]/g, '');
+        };
 
-            function showModal(message, action) {
-                modalText.textContent = message;
-                deferredAction = action;
-                confirmationModal.classList.remove('hidden');
+        // Function to ensure only digits and one decimal separator can be entered
+        const sanitizeWeightInput = (event) => {
+            let value = event.target.value;
+            value = value.replace(/[^0-9,.]/g, '');
+            const parts = value.split(/[.,]/);
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            } else if (value.includes(',')) {
+                value = value.replace(',', '.');
             }
+            event.target.value = value;
+        };
+        
+        // Add event listeners for the number fields
+        weekInput.addEventListener('input', sanitizeIntegerInput);
+        setsInput.addEventListener('input', sanitizeIntegerInput);
+        repsInput.addEventListener('input', sanitizeIntegerInput);
+        weightInput.addEventListener('input', sanitizeWeightInput);
 
-            confirmBtn.addEventListener('click', () => {
-                if (deferredAction) {
-                    deferredAction();
-                }
-                confirmationModal.classList.add('hidden');
-                deferredAction = null;
-            });
+        // Add event listener to the new exercise input to track user input
+        newExerciseInput.addEventListener('input', () => {
+            hasTyped = true;
+        });
 
-            cancelBtn.addEventListener('click', () => {
-                confirmationModal.classList.add('hidden');
-                deferredAction = null;
-            });
-
-            function getSelectedExercise() {
-                return appState.exercises[appState.selectedExerciseIndex];
+        // Add event listener for the details element to reset hasTyped
+        manageExercisesDetails.addEventListener('toggle', () => {
+            if (!manageExercisesDetails.open) {
+                hasTyped = false;
             }
+        });
+        
+        // Function to get the current week number
+        const getWeekNumber = (date) => {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        };
 
-            function updateChart() {
-                const selectedExercise = getSelectedExercise();
-                if (!selectedExercise) return;
-                
-                chartTitle.textContent = `Framsteg för ${selectedExercise.name}`;
+        const initApp = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
 
-                const labels = Array.from({ length: WEEKS }, (_, i) => `Vecka ${i + 1}`);
-                const data = selectedExercise.weeklyData.map(d => d === null || d === undefined ? 0 : d);
-                
-                if (progressChart) {
-                    progressChart.destroy();
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
                 }
 
-                progressChart = new Chart(chartCanvas.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Vikt (kg)',
-                            data: data,
-                            borderColor: '#57534E',
-                            backgroundColor: 'rgba(87, 83, 78, 0.1)',
-                            fill: true,
-                            tension: 0.1,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#57534E',
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: { display: true, text: 'Vikt (kg)' }
-                            },
-                             x: {
-                                title: { display: true, text: 'Tid' }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `Vikt: ${context.parsed.y} kg`;
-                                    }
-                                }
-                            }
+                user = auth.currentUser;
+                userIdDisplay.textContent = `User ID: ${user.uid}`;
+                console.log("Firebase initialized and user authenticated.");
+                
+                // Set the initial week number in the input field
+                weekInput.value = getWeekNumber(new Date());
+
+                const workoutDataPath = `artifacts/${appId}/users/${user.uid}/workout-data`;
+                const exercisesPath = `artifacts/${appId}/users/${user.uid}/exercises`;
+                const workoutDataCollectionRef = collection(db, workoutDataPath);
+                const exercisesCollectionRef = collection(db, exercisesPath);
+
+                // Check and populate default exercises if none exist
+                const exercisesQuerySnapshot = await getDocs(exercisesCollectionRef);
+                if (exercisesQuerySnapshot.empty) {
+                    console.log("No exercises found, adding defaults.");
+                    for (const name of defaultExercises) {
+                        await addDoc(exercisesCollectionRef, { name: name });
+                    }
+                }
+
+                // Set up real-time listener for exercises
+                onSnapshot(exercisesCollectionRef, (querySnapshot) => {
+                    const exercises = [];
+                    querySnapshot.forEach((doc) => {
+                        const exercise = { id: doc.id, name: doc.data().name };
+                        exercises.push(exercise);
+                    });
+
+                    // Sort the exercises alphabetically
+                    const sortedExercises = exercises.sort((a, b) => a.name.localeCompare(b.name));
+
+                    exerciseListDiv.innerHTML = '';
+                    exerciseSelect.innerHTML = '';
+                    
+                    sortedExercises.forEach((exercise) => {
+                        const option = document.createElement('option');
+                        option.value = exercise.name;
+                        option.textContent = exercise.name;
+                        exerciseSelect.appendChild(option);
+
+                        // Render for manage section
+                        const exerciseDiv = document.createElement('div');
+                        exerciseDiv.className = 'flex justify-between items-center bg-[#212121] p-3 rounded-lg shadow-inner shadow-lg';
+                        exerciseDiv.innerHTML = `
+                            <span>${exercise.name}</span>
+                            <button data-id="${exercise.id}" class="remove-exercise-button bg-red-500 text-white px-2 py-1 rounded-full text-xs hover:scale-110 transition-transform duration-300 shadow-md">X</button>
+                        `;
+                        exerciseListDiv.appendChild(exerciseDiv);
+                    });
+                    console.log("Exercises updated and sorted.");
+                }, (error) => {
+                    console.error("Error fetching exercises: ", error);
+                });
+                
+                // Set up real-time listener for workout data
+                let lastAddedWeek = null;
+                const workoutDataQuery = query(collection(db, workoutDataPath));
+                onSnapshot(workoutDataQuery, (querySnapshot) => {
+                    const previousWeekSelection = pastWeeksSelect.value;
+                    const data = [];
+                    querySnapshot.forEach((doc) => {
+                        data.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Populate the week dropdown
+                    const uniqueWeeks = [...new Set(data.map(item => item.week))].sort((a, b) => b - a);
+                    populateWeekDropdown(uniqueWeeks);
+
+                    // Determine which week to select
+                    let weekToSelect = previousWeekSelection;
+                    if (lastAddedWeek) {
+                         weekToSelect = lastAddedWeek.toString();
+                         lastAddedWeek = null;
+                    } else if (!uniqueWeeks.includes(parseInt(previousWeekSelection))) {
+                        weekToSelect = 'all';
+                    }
+                    
+                    pastWeeksSelect.value = weekToSelect;
+                    
+                    if (weekToSelect === 'all') {
+                        renderChart(data);
+                    } else {
+                        renderTable(data, weekToSelect);
+                    }
+                    
+                }, (error) => {
+                    console.error("Error fetching data: ", error);
+                });
+
+                // Add event listener for the save button
+                saveButton.addEventListener('click', async () => {
+                    statusMessageDiv.textContent = ''; // Clear previous messages
+                    statusMessageDiv.classList.remove('text-red-400', 'text-green-400');
+
+                    const exercise = exerciseSelect.value;
+                    const week = parseInt(weekInput.value);
+                    const weightStr = weightInput.value.trim().replace(',', '.');
+                    const weight = parseFloat(weightStr);
+                    const sets = setsInput.value.trim() !== '' ? parseInt(setsInput.value) : null;
+                    const reps = repsInput.value.trim() !== '' ? parseInt(repsInput.value) : null;
+                    
+                    if (!exercise) {
+                        statusMessageDiv.textContent = "Du måste välja en övning.";
+                        statusMessageDiv.classList.add('text-red-400');
+                        return;
+                    }
+                    if (isNaN(week) || week <= 0) {
+                        statusMessageDiv.textContent = "Du måste fylla i ett giltigt värde för Vecka.";
+                        statusMessageDiv.classList.add('text-red-400');
+                        return;
+                    }
+                    if (weightStr === '' || isNaN(weight) || weight <= 0) {
+                        statusMessageDiv.textContent = "Du måste fylla i ett giltigt värde för Vikt.";
+                        statusMessageDiv.classList.add('text-red-400');
+                        return;
+                    }
+
+                    try {
+                        const newDocRef = collection(db, workoutDataPath);
+                        await addDoc(newDocRef, {
+                            exercise: exercise,
+                            week: week,
+                            sets: sets,
+                            reps: reps,
+                            weight: weight,
+                            timestamp: serverTimestamp()
+                        });
+                        lastAddedWeek = week;
+                        statusMessageDiv.textContent = "Data sparad!";
+                        statusMessageDiv.classList.add('text-green-400');
+                        
+                        // Clear inputs for new entry
+                        setsInput.value = '';
+                        repsInput.value = '';
+                        weightInput.value = '';
+
+                        console.log("Data saved successfully.");
+                    } catch (e) {
+                        statusMessageDiv.textContent = "Fel vid spara av data.";
+                        statusMessageDiv.classList.add('text-red-400');
+                        console.error("Error adding document: ", e);
+                    }
+                });
+
+                // Add event listener for the add exercise button
+                addExerciseButton.addEventListener('click', async () => {
+                    const newExerciseName = newExerciseInput.value.trim();
+                    if (newExerciseName === '') {
+                        statusMessageDiv.textContent = "Vänligen ange ett namn för den nya övningen.";
+                        statusMessageDiv.classList.add('text-red-400');
+                        return;
+                    }
+                    
+                    try {
+                        const newDocRef = collection(db, exercisesPath);
+                        await addDoc(newDocRef, { name: newExerciseName });
+                        newExerciseInput.value = '';
+                        statusMessageDiv.textContent = "Ny övning tillagd!";
+                        statusMessageDiv.classList.add('text-green-400');
+                        console.log("New exercise added successfully.");
+                        
+                        // Only collapse the details element if the user hasn't typed anything
+                        if (!hasTyped) {
+                            setTimeout(() => {
+                                manageExercisesDetails.open = false;
+                            }, 2000);
+                        }
+                        // Reset the flag for the next use
+                        hasTyped = false;
+
+                    } catch (e) {
+                        statusMessageDiv.textContent = "Fel vid tillägg av övning.";
+                        statusMessageDiv.classList.add('text-red-400');
+                        console.error("Error adding new exercise: ", e);
+                    }
+                });
+
+                // Add event listener for removing exercises from the list
+                exerciseListDiv.addEventListener('click', async (event) => {
+                    if (event.target.classList.contains('remove-exercise-button')) {
+                        const docId = event.target.dataset.id;
+                        modal.style.display = 'block';
+                        entryToDelete = { type: 'exercise', id: docId, name: event.target.parentElement.querySelector('span').textContent };
+                        document.getElementById('modal-message').textContent = `Är du säker på att du vill ta bort övningen "${entryToDelete.name}"? Detta kommer att radera alla inmatningar för denna övning.`;
+                    }
+                });
+                
+                // Add event listener for removing single entries from the table
+                tableBody.addEventListener('click', async (event) => {
+                    if (event.target.classList.contains('delete-entry-button')) {
+                        const docId = event.target.dataset.docId;
+                        entryToDelete = { type: 'data', id: docId };
+                        document.getElementById('modal-message').textContent = `Är du säker på att du vill ta bort denna inmatning?`;
+                        modal.style.display = 'block';
+                    }
+                });
+
+                // Modal button listeners
+                confirmDeleteButton.addEventListener('click', async () => {
+                    modal.style.display = 'none';
+                    if (entryToDelete.type === 'exercise') {
+                        try {
+                            // First, delete all workout data entries associated with this exercise
+                            const q = query(collection(db, workoutDataPath), where("exercise", "==", entryToDelete.name));
+                            const querySnapshot = await getDocs(q);
+                            const deletePromises = [];
+                            querySnapshot.forEach((doc) => {
+                                deletePromises.push(deleteDoc(doc.ref));
+                            });
+                            await Promise.all(deletePromises);
+                            // Then, delete the exercise itself
+                            await deleteDoc(doc(db, exercisesPath, entryToDelete.id));
+                            console.log("Exercise and all related data removed successfully.");
+                        } catch (e) {
+                            console.error("Error removing exercise and data: ", e);
+                        }
+                    } else if (entryToDelete.type === 'data') {
+                        try {
+                            await deleteDoc(doc(db, workoutDataPath, entryToDelete.id));
+                            console.log(`Single data entry removed successfully.`);
+                        } catch (e) {
+                            console.error("Error removing data entry: ", e);
                         }
                     }
+                    entryToDelete = null;
                 });
-            }
 
-            function updateKPIs() {
-                const selectedExercise = getSelectedExercise();
-                if (!selectedExercise) {
-                    latestWeightEl.textContent = 'N/A';
-                    personalBestEl.textContent = 'N/A';
-                    return;
-                }
+                cancelDeleteButton.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                    entryToDelete = null;
+                });
                 
-                const validWeights = selectedExercise.weeklyData.filter(w => typeof w === 'number');
-                const lastWeight = validWeights.length > 0 ? validWeights[validWeights.length - 1] : 0;
-                const bestWeight = validWeights.length > 0 ? Math.max(...validWeights) : 0;
-
-                latestWeightEl.textContent = `${lastWeight} kg`;
-                personalBestEl.textContent = `${bestWeight} kg`;
-            }
-
-            function updateExerciseSelector() {
-                exerciseSelect.innerHTML = '';
-                appState.exercises.forEach((ex, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = ex.name;
-                    if (index === appState.selectedExerciseIndex) {
-                        option.selected = true;
+                // Close modal when clicking outside
+                window.addEventListener('click', (event) => {
+                    if (event.target == modal) {
+                        modal.style.display = 'none';
+                        entryToDelete = null;
                     }
-                    exerciseSelect.appendChild(option);
                 });
-            }
-            
-            function renderTable() {
-                tableHeaderRow.innerHTML = '';
-                tableBody.innerHTML = '';
 
-                const headers = ['Övning', 'Sets', 'Reps', ...Array.from({ length: WEEKS }, (_, i) => `Vecka ${i + 1} (kg)`)];
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.className = 'table-cell font-semibold';
-                    th.textContent = header;
-                    tableHeaderRow.appendChild(th);
-                });
-                tableHeaderRow.innerHTML += `<th class="table-cell"></th>`;
-                
-                appState.exercises.forEach((ex, exIndex) => {
-                    const row = document.createElement('tr');
-                    
-                    const nameCell = document.createElement('td');
-                    nameCell.className = 'table-cell font-semibold text-left';
-                    nameCell.textContent = ex.name;
-                    row.appendChild(nameCell);
-                    
-                    ['sets', 'reps'].forEach(prop => {
-                        const cell = document.createElement('td');
-                        cell.className = 'table-cell';
+                // Add event listener for editing values in the table
+                tableBody.addEventListener('click', async (event) => {
+                    const cell = event.target;
+                    const cellType = cell.dataset.type;
+                    const docId = cell.dataset.docId;
+
+                    if (cellType && docId && !cell.querySelector('input')) {
+                        const oldValue = cell.textContent.trim();
                         const input = document.createElement('input');
                         input.type = 'number';
-                        input.value = ex[prop];
-                        input.dataset.exIndex = exIndex;
-                        input.dataset.prop = prop;
-                        input.addEventListener('change', handleTableCellChange);
+                        input.className = 'editable-cell input-editable';
+
+                        if (cellType === 'weight') {
+                            input.step = "0.1";
+                            input.value = parseFloat(oldValue.replace(',', '.'));
+                            input.addEventListener('input', sanitizeWeightInput);
+                        } else {
+                            input.step = "1";
+                            if (oldValue !== '-') {
+                                input.value = parseInt(oldValue);
+                            }
+                            input.addEventListener('input', sanitizeIntegerInput);
+                        }
+                        
+                        cell.textContent = '';
                         cell.appendChild(input);
-                        row.appendChild(cell);
-                    });
+                        input.focus();
 
-                    ex.weeklyData.forEach((weight, weekIndex) => {
-                         const cell = document.createElement('td');
-                         cell.className = 'table-cell';
-                         const input = document.createElement('input');
-                         input.type = 'number';
-                         input.step = "0.25";
-                         input.value = weight;
-                         input.dataset.exIndex = exIndex;
-                         input.dataset.prop = 'weeklyData';
-                         input.dataset.weekIndex = weekIndex;
-                         input.addEventListener('change', handleTableCellChange);
-                         cell.appendChild(input);
-                         row.appendChild(cell);
-                    });
-                    
-                    const actionsCell = document.createElement('td');
-                    actionsCell.className = 'table-cell whitespace-nowrap';
-                    
-                    const clearBtn = document.createElement('button');
-                    clearBtn.innerHTML = '&#x21BB;';
-                    clearBtn.className = 'text-stone-600 hover:text-stone-800 font-bold mr-2';
-                    clearBtn.title = `Rensa data för ${ex.name}`;
-                    clearBtn.dataset.exIndex = exIndex;
-                    clearBtn.addEventListener('click', handleClearData);
-                    actionsCell.appendChild(clearBtn);
+                        const handleBlur = async () => {
+                            const inputValue = input.value.trim().replace(',', '.');
+                            let newValue = null;
+                            if (inputValue !== '') {
+                                if (cellType === 'weight') {
+                                    newValue = parseFloat(inputValue);
+                                } else {
+                                    newValue = parseInt(inputValue);
+                                }
+                            }
+                            
+                            const isInvalid = inputValue !== '' && (isNaN(newValue) || newValue <= 0);
+                            const isChanged = newValue !== parseFloat(oldValue) && newValue !== parseInt(oldValue);
 
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.innerHTML = '&#10005;';
-                    deleteBtn.className = 'text-red-600 hover:text-red-800 font-bold';
-                    deleteBtn.title = `Ta bort ${ex.name}`;
-                    deleteBtn.dataset.exIndex = exIndex;
-                    deleteBtn.addEventListener('click', handleDeleteExercise);
-                    actionsCell.appendChild(deleteBtn);
-                    
-                    row.appendChild(actionsCell);
+                            if (!isInvalid && isChanged) {
+                                const docRef = doc(db, workoutDataPath, docId);
+                                let updateObject = {};
+                                updateObject[cellType] = newValue;
+                                try {
+                                    await updateDoc(docRef, updateObject);
+                                    console.log(`${cellType} updated successfully.`);
+                                } catch (e) {
+                                    console.error(`Error updating ${cellType}: `, e);
+                                    cell.textContent = oldValue;
+                                }
+                            }
+                            // Revert cell text content, it will be updated by onSnapshot if the write was successful
+                            cell.textContent = oldValue; 
+                        };
 
-                    tableBody.appendChild(row);
+                        input.addEventListener('blur', handleBlur);
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                input.blur();
+                            }
+                        });
+                    }
                 });
-            }
 
-            function handleTableCellChange(e) {
-                const { exIndex, prop, weekIndex } = e.target.dataset;
-                const value = parseFloat(e.target.value);
-                
-                if (isNaN(value)) return;
-                
-                if (prop === 'weeklyData') {
-                    appState.exercises[exIndex].weeklyData[weekIndex] = value;
-                } else {
-                    appState.exercises[exIndex][prop] = value;
-                }
-                
-                if (parseInt(exIndex) === appState.selectedExerciseIndex) {
-                    updateUI();
-                }
-            }
-
-            function handleClearData(e) {
-                const { exIndex } = e.currentTarget.dataset;
-                const exerciseName = appState.exercises[exIndex].name;
-                showModal(`Är du säker på att du vill rensa all data för ${exerciseName}?`, () => {
-                    appState.exercises[exIndex].weeklyData.fill(null);
-                    fullRender();
-                });
-            }
-            
-            function handleDeleteExercise(e) {
-                 const { exIndex } = e.currentTarget.dataset;
-                 const exerciseName = appState.exercises[exIndex].name;
-                 showModal(`Är du säker på att du vill ta bort ${exerciseName}?`, () => {
-                     appState.exercises.splice(exIndex, 1);
-                     if (appState.selectedExerciseIndex >= exIndex) {
-                         appState.selectedExerciseIndex = Math.max(0, appState.selectedExerciseIndex - 1);
-                     }
-                     fullRender();
-                 });
-            }
-
-            function updateUI() {
-                updateChart();
-                updateKPIs();
-            }
-            
-            function fullRender() {
-                updateExerciseSelector();
-                renderTable();
-                updateUI();
-            }
-
-            exerciseSelect.addEventListener('change', (e) => {
-                appState.selectedExerciseIndex = parseInt(e.target.value);
-                updateUI();
-            });
-            
-            dataEntryForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const week = parseInt(currentWeekInput.value);
-                const weight = parseFloat(weightInput.value);
-
-                if (isNaN(week) || isNaN(weight) || week < 1 || week > WEEKS) {
-                     showModal(`Vänligen ange en giltig vecka (1-${WEEKS}) och vikt.`, () => {});
-                    return;
-                }
-                
-                const selectedExercise = getSelectedExercise();
-                selectedExercise.weeklyData[week - 1] = weight;
-                
-                dataEntryForm.reset();
-                fullRender();
-            });
-            
-            addExerciseForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const name = newExerciseNameInput.value.trim();
-                if (name) {
-                    appState.exercises.push({
-                        name: name,
-                        sets: 0,
-                        reps: 0,
-                        weeklyData: Array(WEEKS).fill(null)
+                // Add input event listener to the week input field to update the table
+                pastWeeksSelect.addEventListener('change', async () => {
+                    const selectedWeek = pastWeeksSelect.value;
+                    const q = query(collection(db, workoutDataPath));
+                    const querySnapshot = await getDocs(q);
+                    const data = [];
+                    querySnapshot.forEach((doc) => {
+                        data.push({ id: doc.id, ...doc.data() });
                     });
-                    newExerciseNameInput.value = '';
-                    appState.selectedExerciseIndex = appState.exercises.length - 1;
-                    fullRender();
+
+                    if (selectedWeek === 'all') {
+                        renderChart(data);
+                    } else {
+                        renderTable(data, selectedWeek);
+                    }
+                });
+
+                // Hide loading and show main content with a smooth transition
+                loadingDiv.style.opacity = '0';
+                setTimeout(() => {
+                    loadingDiv.classList.add('hidden');
+                    mainContentDiv.classList.remove('hidden');
+                    mainContentDiv.style.opacity = '1';
+                }, 500);
+
+            } catch (e) {
+                console.error("Failed to initialize Firebase:", e);
+                loadingDiv.classList.add('hidden');
+                mainContentDiv.classList.remove('hidden');
+                dataListEmptyMessage.classList.remove('hidden');
+            }
+        };
+
+        const populateWeekDropdown = (weeks) => {
+            pastWeeksSelect.innerHTML = '';
+            
+            // Add option to view all weeks
+            const allWeeksOption = document.createElement('option');
+            allWeeksOption.value = 'all';
+            allWeeksOption.textContent = 'Alla veckor';
+            pastWeeksSelect.appendChild(allWeeksOption);
+            
+            // Add previous weeks
+            const sortedWeeks = weeks.sort((a, b) => b - a);
+            sortedWeeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week;
+                option.textContent = `Vecka ${week}`;
+                pastWeeksSelect.appendChild(option);
+            });
+        };
+
+        const renderTable = (data, selectedWeek) => {
+            chartContainer.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+            tableInstruction.classList.remove('hidden');
+            tableBody.innerHTML = '';
+            tableHead.innerHTML = '';
+            
+            let filteredData = [];
+            if (selectedWeek === 'all') {
+                tableTitle.textContent = 'Alla veckor';
+                filteredData = data;
+            } else {
+                const weekNumber = parseInt(selectedWeek);
+                tableTitle.textContent = `Vecka ${weekNumber}`;
+                filteredData = data.filter(item => item.week === weekNumber);
+            }
+
+            if (filteredData.length === 0) {
+                dataListEmptyMessage.classList.remove('hidden');
+                return;
+            }
+            dataListEmptyMessage.classList.add('hidden');
+
+            // Group data by exercise
+            const exercises = [...new Set(filteredData.map(item => item.exercise))].sort();
+
+            // Build table header
+            let headerRow = '<tr>';
+            headerRow += `<th class="rounded-tl-lg min-w-[80px]">Övning</th>`;
+            headerRow += `<th class="min-w-[80px]">Sets</th>`;
+            headerRow += `<th class="min-w-[80px]">Reps</th>`;
+            headerRow += `<th class="min-w-[80px]">Vikt (kg)</th>`;
+            headerRow += `<th class="rounded-tr-lg">Ta bort</th>`;
+            headerRow += '</tr>';
+            tableHead.innerHTML = headerRow;
+
+            // Build table body
+            exercises.forEach(exercise => {
+                const entriesForExercise = filteredData.filter(item => item.exercise === exercise);
+                if (entriesForExercise.length > 0) {
+                    const latestEntry = entriesForExercise.reduce((latest, current) => {
+                        return (latest.timestamp && latest.timestamp.seconds) > (current.timestamp && current.timestamp.seconds) ? latest : current;
+                    });
+                    
+                    const sets = latestEntry.sets !== null ? latestEntry.sets : '-';
+                    const reps = latestEntry.reps !== null ? latestEntry.reps : '-';
+                    const weight = latestEntry.weight;
+                    
+                    let row = '<tr>';
+                    row += `<td class="min-w-[80px]">${exercise}</td>`;
+                    row += `<td class="editable-cell min-w-[80px]" data-type="sets" data-doc-id="${latestEntry.id}">${sets}</td>`; 
+                    row += `<td class="editable-cell min-w-[80px]" data-type="reps" data-doc-id="${latestEntry.id}">${reps}</td>`; 
+                    row += `<td class="editable-cell min-w-[80px]" data-type="weight" data-doc-id="${latestEntry.id}">${weight}</td>`;
+                    
+                    row += `
+                        <td class="delete-button-cell">
+                            <button data-doc-id="${latestEntry.id}" class="delete-entry-button bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-red-600 transition-colors duration-200 shadow-md">X</button>
+                        </td>`;
+                    row += '</tr>';
+                    tableBody.innerHTML += row;
                 }
             });
+        };
 
-            fullRender();
-        });
+        const renderChart = (data) => {
+            tableContainer.classList.add('hidden');
+            tableInstruction.classList.add('hidden');
+            chartContainer.classList.remove('hidden');
+            tableTitle.textContent = 'Träningsframsteg';
+
+            if (data.length === 0) {
+                dataListEmptyMessage.classList.remove('hidden');
+                if (myChart) myChart.destroy();
+                return;
+            }
+            dataListEmptyMessage.classList.add('hidden');
+
+            // Group data by week and then by exercise
+            const groupedByWeek = data.reduce((acc, entry) => {
+                if (!acc[entry.week]) {
+                    acc[entry.week] = {};
+                }
+                if (!acc[entry.week][entry.exercise]) {
+                    acc[entry.week][entry.exercise] = [];
+                }
+                acc[entry.week][entry.exercise].push(entry);
+                return acc;
+            }, {});
+
+            const weeks = Object.keys(groupedByWeek).sort((a, b) => a - b);
+            const allExercises = [...new Set(data.map(item => item.exercise))].sort();
+
+            const datasets = allExercises.map(exercise => {
+                const exerciseData = weeks.map(week => {
+                    const entriesForWeek = groupedByWeek[week][exercise];
+                    if (entriesForWeek && entriesForWeek.length > 0) {
+                        const latestEntry = entriesForWeek.reduce((latest, current) => {
+                            return (latest.timestamp && latest.timestamp.seconds) > (current.timestamp && current.timestamp.seconds) ? latest : current;
+                        });
+                        return latestEntry.weight;
+                    }
+                    return null;
+                });
+                return {
+                    label: exercise,
+                    data: exerciseData,
+                    borderColor: getRandomColor(),
+                    tension: 0.1,
+                    fill: false,
+                    spanGaps: true
+                };
+            });
+
+            const chartData = {
+                labels: weeks.map(week => `Vecka ${week}`),
+                datasets: datasets
+            };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Vecka',
+                            color: '#d1e2f8'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Vikt (kg)',
+                            color: '#d1e2f8'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0'
+                        }
+                    }
+                }
+            };
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(weightChart, {
+                type: 'line',
+                data: chartData,
+                options: chartOptions
+            });
+        };
+        
+        const getRandomColor = () => {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        };
+
+        window.onload = initApp;
     </script>
 </body>
 </html>
