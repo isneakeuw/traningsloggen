@@ -133,27 +133,21 @@
 </head>
 <body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
     <div id="app-container" class="w-full max-w-lg bg-[#2e2e2e] rounded-2xl shadow-2xl p-6 sm:p-8">
-        <!-- Title and User ID Section -->
         <header class="mb-6 text-center">
             <h1 class="text-3xl sm:text-4xl font-bold mb-1 text-[#d1e2f8]">Träningslogg</h1>
             <p id="user-id-display" class="text-xs text-gray-400 font-mono"></p>
         </header>
 
-        <!-- Loading Indicator -->
         <div id="loading" class="flex justify-center items-center h-20 transition-all duration-500 ease-in-out">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d1e2f8]"></div>
         </div>
 
-        <!-- Main Content (hidden until loaded) -->
         <div id="main-content" class="hidden transition-opacity duration-500 ease-in-out">
-            <!-- Data Input Section -->
             <div class="bg-[#333] p-5 rounded-xl mb-6 shadow-xl">
                 <h3 class="text-lg font-semibold mb-4 text-[#d1e2f8]">Ny inmatning</h3>
                 <div class="flex flex-col space-y-4">
                     <select id="exercise-select" class="bg-[#212121] text-white p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner">
-                        <!-- Options will be dynamically added here -->
-                    </select>
-                    <!-- Inputs using a grid for better control -->
+                        </select>
                     <div class="grid grid-cols-[0.8fr_1fr_1fr_1.5fr] gap-4">
                         <div class="flex flex-col items-start space-y-2">
                             <label for="week-input" class="text-gray-400 text-sm font-semibold">Vecka</label>
@@ -179,7 +173,6 @@
                  <div id="status-message" class="text-center text-red-400 mt-4 h-6"></div>
             </div>
 
-            <!-- Manage Exercises Section (now a collapsible list) -->
             <details id="manage-exercises-details" class="bg-[#333] p-5 rounded-xl mb-6 shadow-xl">
                 <summary class="text-lg font-semibold text-[#d1e2f8] cursor-pointer transition-all duration-300">Hantera Övningar</summary>
                 <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 mt-4">
@@ -189,28 +182,23 @@
                     </button>
                 </div>
                 <div id="exercise-list" class="space-y-2">
-                    <!-- Exercise list will be dynamically added here -->
-                </div>
+                    </div>
             </details>
 
-            <!-- Data Table Section -->
             <div class="bg-[#333] p-5 rounded-xl shadow-xl">
                 <h3 class="text-lg font-semibold mb-4 text-[#d1e2f8]" id="table-title">Vecka </h3>
                 <div class="mb-4">
                     <label for="past-weeks-select" class="text-gray-400 text-sm font-semibold">Välj vecka att visa:</label>
                     <select id="past-weeks-select" class="bg-[#212121] text-white p-2 rounded-lg w-full mt-2 focus:outline-none focus:ring-2 focus:ring-[#5cb85c] transition-all duration-300 shadow-inner">
-                        <!-- Options will be dynamically added here -->
-                    </select>
+                        </select>
                 </div>
                 <p id="table-instruction" class="text-sm text-gray-400 mb-4">Klicka på en cell för att redigera dess värde. Ändringen sparas automatiskt när du klickar utanför fältet.</p>
                 <div id="table-container" class="overflow-x-auto">
                     <table class="styled-table w-full text-sm rounded-lg">
                         <thead id="table-head">
-                            <!-- Table headers will be dynamically added here -->
-                        </thead>
+                            </thead>
                         <tbody id="table-body">
-                            <!-- Table rows will be dynamically added here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
                 <div id="chart-container" class="hidden h-80">
@@ -220,7 +208,6 @@
             </div>
         </div>
     
-    <!-- Custom Confirmation Modal -->
     <div id="confirmationModal" class="modal">
         <div class="modal-content">
             <h4 class="text-xl font-bold mb-4" id="modal-title">Bekräfta borttagning</h4>
@@ -232,7 +219,6 @@
         </div>
     </div>
 
-    <!-- Firebase and Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -242,9 +228,9 @@
         setLogLevel('debug');
 
         // Global variables for Firebase
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = "1:949604620134:web:424835eafca2dc0a66daa7";
+        const firebaseConfig = {"apiKey":"AIzaSyCKjXS1TxfEcfd-nDr0jI0galrjXsz7HgM","authDomain":"traningslogg-a271a.firebaseapp.com","projectId":"traningslogg-a271a","storageBucket":"traningslogg-a271a.firebasestorage.app","messagingSenderId":"949604620134","appId":"1:949604620134:web:424835eafca2dc0a66daa7","measurementId":"G-Q9MRXSQ6JB"};
+        const initialAuthToken = null;
 
         // HTML Elements
         const loadingDiv = document.getElementById('loading');
